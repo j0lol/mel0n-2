@@ -49,15 +49,15 @@ fn resolve_collision(contact: Contact) -> Vec2 {
     info!("J {impulse_mag}");
     let impulse_dir = contact.normal;
 
-    // assert!(
-    //     impulse_mag < 80.0,
-    //     "Ur physics is fucked: mag {impulse_mag} \n			= -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n			= {} / {}",
-    //     contact.normal,
-    //     a.inverse_mass,
-    //     b.inverse_mass,
-    //     -(1. + e) * rel_v.dot(contact.normal),
-    //     (a.inverse_mass + b.inverse_mass)
-    // );
+    assert!(
+        impulse_mag < 80.0,
+        "Excessively large impulse: mag {impulse_mag} \n			= -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n			= {} / {}",
+        contact.normal,
+        a.inverse_mass,
+        b.inverse_mass,
+        -(1. + e) * rel_v.dot(contact.normal),
+        (a.inverse_mass + b.inverse_mass)
+    );
     impulse_dir * impulse_mag
 }
 
