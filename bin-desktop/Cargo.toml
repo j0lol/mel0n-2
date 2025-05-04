@@ -1,0 +1,9 @@
+[package]
+name = "bin-desktop"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mel0n = { path = "../mel0n", features = ["desktop"] }
+bevy = { version = "0.16", features = ["bevy_dev_tools"] }
+log = { version = "0.4", default-features = false }

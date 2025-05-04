@@ -1,0 +1,16 @@
+[package]
+name = "bin-gba"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mel0n = { path = "../mel0n", features = ["gba"] }
+bevy_mod_gba = "0.1.0"
+bevy = { version = "0.16", features = ["bevy_state"], default-features = false }
+agb = "0.21.3"
+log = { version = "0.4", default-features = false }
+itertools = { version = "0.14.0", default-features = false, features = [
+    "use_alloc",
+] }
+
+[workspace]

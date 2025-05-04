@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml">
+      <package file="$PROJECT_DIR$/bin-desktop">
+        <enabledFeature name="default" />
+      </package>
+      <package file="$PROJECT_DIR$/mel0n">
+        <enabledFeature name="default" />
+        <enabledFeature name="desktop" />
+      </package>
+    </cargoProject>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="fa855099-1af1-44f9-93cd-2affe75012ec" name="Changes" comment="it kind of works. very laggy on hw">
+      <change beforePath="$PROJECT_DIR$/bin-desktop/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/bin-desktop/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bin-desktop/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/bin-desktop/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mel0n/src/fruit.rs" beforeDir="false" afterPath="$PROJECT_DIR$/mel0n/src/fruit.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mel0n/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/mel0n/src/lib.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mel0n/src/physics.rs" beforeDir="false" afterPath="$PROJECT_DIR$/mel0n/src/physics.rs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:test" />
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/mel0n" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="oVQyfgJU" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="2waeHBm388mJDC1dih7fiSH1K6K" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Cargo.Run bin-desktop.executor": "Run",
+    "Cargo.Test bevy-mel0n.executor": "Run",
+    "Just.Gba Debug.executor": "Run",
+    "Just.Gba Release.executor": "Run",
+    "Just.Unnamed.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "master",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.first.attach.projects": "true",
+    "org.rust.hideNoCargoProjectNotifications/Users/j0/Projects/bevy-mel0n/bin-gba/src/main.rs": "true",
+    "settings.editor.selected.configurable": "actions.on.save"
+  }
+}]]></component>
+  <component name="RsExternalLinterProjectSettings">
+    <option name="runOnTheFly" value="false" />
+  </component>
+  <component name="RunManager" selected="Just.Gba Release">
+    <configuration name="Run bin-desktop" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="buildProfileId" value="dev" />
+      <option name="command" value="run --package bin-desktop --bin bin-desktop" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test bevy-mel0n" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="buildProfileId" value="test" />
+      <option name="command" value="test --workspace" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Gba Debug" type="JustRunConfiguration" factoryName="JustRunConfiguration">
+      <option name="envVariables" />
+      <option name="fileName" value="justfile" />
+      <option name="recipeArgs" />
+      <option name="recipeName" value="gba-dbg" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Gba Release" type="JustRunConfiguration" factoryName="JustRunConfiguration">
+      <option name="envVariables" />
+      <option name="fileName" value="justfile" />
+      <option name="recipeArgs" />
+      <option name="recipeName" value="gba" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Cargo.Run bin-desktop" />
+      <item itemvalue="Cargo.Test bevy-mel0n" />
+      <item itemvalue="Just.Gba Debug" />
+      <item itemvalue="Just.Gba Release" />
+    </list>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="fa855099-1af1-44f9-93cd-2affe75012ec" name="Changes" comment="" />
+      <created>1740570240169</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1740570240169</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="What a mess." />
+    <MESSAGE value="it kind of works. very laggy on hw" />
+    <option name="LAST_COMMIT_MESSAGE" value="it kind of works. very laggy on hw" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
