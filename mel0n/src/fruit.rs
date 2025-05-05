@@ -123,6 +123,8 @@ pub fn place_fruit(
 ) {
     // let (root, _) = *root;
     // info!("{n:?}");
+
+    use crate::MOON_PHYSICS;
     if gamepad.is_some_and(|g| g.just_pressed(GamepadButton::East))
         || keys.just_pressed(KeyCode::Space)
     {
@@ -134,6 +136,10 @@ pub fn place_fruit(
                     diameter: Diameter(FRUIT_DIAMETER),
                     transform: Transform::from_translation(fruit.extend(1.0))
                         .with_scale(Vec2::splat(FRUIT_DIAMETER).extend(1.)),
+                    velocity: Velocity(vec2(
+                        if MOON_PHYSICS { 0.7 } else { 0.0 },
+                        if MOON_PHYSICS { 1.0 } else { 0.0 },
+                    )),
                     ..default()
                 },
                 Mesh2d(meshes.add(Circle::default())),

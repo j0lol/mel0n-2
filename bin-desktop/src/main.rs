@@ -5,10 +5,11 @@ use std::{
 
 use bevy::{
     color::palettes::css::{
-        BLACK, BLUE, FUCHSIA, GREEN, HOT_PINK, LIME, NAVY, ORANGE, ORANGE_RED, PINK, PURPLE, RED,
-        TEAL, YELLOW, YELLOW_GREEN,
+        BLACK, BLUE, FUCHSIA, GREEN, HOT_PINK, LIME, NAVY, ORANGE, ORANGE_RED, PINK, PURPLE,
+        REBECCA_PURPLE, RED, TEAL, YELLOW, YELLOW_GREEN,
     },
     dev_tools::picking_debug::{DebugPickingMode, DebugPickingPlugin},
+    ecs::{event, schedule::Stepping},
     log::LogPlugin,
     math::VectorSpace,
     prelude::*,
@@ -16,8 +17,10 @@ use bevy::{
 use mel0n::{
     Collider, Mel0nBasePlugin, Mel0nPhysicsSet, Mel0nSetupSet, Root, Velocity,
     fruit::{Collided, FRUIT_DIAMETER, Fruit},
+    physics::ImpulseGizmoEvent,
     wall::{Wall, WallLocation},
 };
+use ops::atan2;
 
 use crate::gamepad_vis::GamepadVisPlugin;
 
@@ -25,6 +28,9 @@ use crate::gamepad_vis::GamepadVisPlugin;
 struct MyRoundGizmos {}
 
 fn main() {
+    let mut stepping = Stepping::new();
+    stepping.add_schedule(FixedUpdate);
+
     App::new()
         .add_plugins((
             DefaultPlugins.set(LogPlugin {
@@ -38,19 +44,38 @@ fn main() {
         ))
         .add_systems(
             Update,
-            ((draw_velocities, draw_collision_count)
+            ((
+                draw_velocities,
+                // draw_collision_count,
+                // draw_impulse_gizmos,
+                angle_draw,
+            )
                 .chain()
                 .after(Mel0nPhysicsSet)),
         )
+        .add_systems(Update, stepping_handler)
         .init_gizmo_group::<MyRoundGizmos>()
         .insert_resource(DebugPickingMode::Noisy)
         .insert_resource(Time::<Virtual>::from_max_delta(Duration::from_secs(5)))
-        .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(100)))
+        .insert_resource(Time::<Fixed>::from_hz(64.0))
+        .insert_resource(stepping)
         .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)))
         .add_systems(Startup, (setup_camera, show_walls.after(Mel0nSetupSet)))
         .run();
 }
-
+fn stepping_handler(mut stepping: ResMut<Stepping>, input: Res<ButtonInput<KeyCode>>) {
+    if input.just_pressed(KeyCode::Digit1) || input.pressed(KeyCode::Digit2) {
+        // Pressing 1 runs the systems for one frame.
+        // Holding 2 runs the systems until the key is released.
+        stepping.continue_frame();
+    } else if input.just_pressed(KeyCode::Digit3) {
+        // Pressing 3 disables stepping which means that the systems run freely.
+        stepping.disable();
+    } else if input.just_pressed(KeyCode::Digit4) {
+        // Pressing 4 enables stepping again.
+        stepping.enable();
+    }
+}
 // Thanks https://rparrett.github.io/zola-test/posts/drawing-lines/
 fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> impl Bundle {
     let length = start.distance(end);
@@ -79,12 +104,60 @@ fn draw_velocities(query: Query<(&Velocity, &Transform), With<Fruit>>, mut gizmo
         let pos = trans.translation.xy();
         gizmos.arrow_2d(
             pos * mirror_y + cam_offset,
-            (pos + (vel.0 * 10.0)) * mirror_y + cam_offset,
+            (pos + (vel.0 * 100.0)) * mirror_y + cam_offset,
             RED,
         );
     }
 }
 
+fn draw_impulse_gizmos(mut ev_impulse: EventReader<ImpulseGizmoEvent>, mut gizmos: Gizmos) {
+    let mirror_y = vec2(1., -1.);
+    let cam_offset = vec2(-110.0, 0.);
+
+    for ImpulseGizmoEvent { pos, imp, mass } in ev_impulse.read() {
+        gizmos.arrow_2d(
+            pos * mirror_y + cam_offset,
+            (pos + (imp / mass * 1000.0)) * mirror_y + cam_offset,
+            GREEN,
+        );
+    }
+}
+
+fn angle_draw(query: Query<(&Transform), With<Fruit>>, mut gizmos: Gizmos) {
+    let mirror_y = vec2(1., -1.);
+    let cam_offset = vec2(-110.0, 0.);
+    let off = |v| v * mirror_y + cam_offset;
+
+    let mut fruits = query.iter();
+    let Some(Transform { translation: a, .. }) = fruits.next() else {
+        return;
+    };
+    let Some(Transform { translation: b, .. }) = fruits.next() else {
+        return;
+    };
+
+    // log::info!("ang {}", a.xy().angle_to(b.xy()).to_degrees());
+    let normal_dir = a.xy().angle_to(b.xy());
+    let normal = Vec2::from_angle(normal_dir - FRAC_PI_2).normalize();
+
+    let better_angle = atan2(b.y - a.y, b.x - a.x);
+    gizmos.arrow_2d(off(a.xy()), off(b.xy()), PURPLE);
+    gizmos.arrow_2d(off(vec2(0., 0.)), off(normal * 100.0), PINK);
+    gizmos.arrow_2d(
+        off(vec2(0., 0.)),
+        off(Vec2::from_angle(better_angle) * 100.0),
+        REBECCA_PURPLE,
+    );
+
+    // for (vel, trans) in query {
+    //     let pos = trans.translation.xy();
+    //     gizmos.arrow_2d(
+    //         pos * mirror_y + cam_offset,
+    //         (pos + (vel.0 * 10.0)) * mirror_y + cam_offset,
+    //         RED,
+    //     );
+    // }
+}
 fn draw_collision_count(query: Query<(&Collided, &Transform), With<Fruit>>, mut gizmos: Gizmos) {
     let mirror_y = vec2(1., -1.);
     let cam_offset = vec2(-110.0, 0.);

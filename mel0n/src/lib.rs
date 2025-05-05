@@ -11,17 +11,26 @@ pub mod gba;
 pub mod physics;
 pub mod wall;
 
-use bevy::prelude::*;
+use bevy::{
+    gizmos::{
+        UpdateGizmoMeshes, clear_gizmo_context, collect_requested_gizmos, end_gizmo_context,
+        gizmos::GizmoStorage, propagate_gizmos, start_gizmo_context,
+    },
+    prelude::*,
+};
 #[cfg(feature = "gba")]
 use bevy_mod_gba::Sprite;
 use fruit::add_fruit;
 #[cfg(feature = "gba")]
 use gba::Mel0nGbaSetupSet;
-use physics::{apply_collisions, apply_friction, apply_gravity, integrate_position};
+use physics::{
+    ImpulseGizmoEvent, apply_collisions, apply_friction, apply_gravity, integrate_position,
+};
 use wall::add_walls;
 
 use crate::{fruit::place_fruit, wall::constrain_objects};
 
+const MOON_PHYSICS: bool = true;
 #[derive(Component)]
 #[require(Gravity, Jumps, Velocity, Transform)]
 pub struct Player;
@@ -58,6 +67,14 @@ pub struct Mel0nPhysicsSet;
 
 pub struct Mel0nBasePlugin;
 
+#[derive(GizmoConfigGroup, Reflect, Default)]
+struct PhysGizmoConfigGroup;
+struct PhysGizmoContext;
+
+fn not_moon_physics() -> bool {
+    !MOON_PHYSICS
+}
+
 impl Plugin for Mel0nBasePlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "gba")]
@@ -68,28 +85,22 @@ impl Plugin for Mel0nBasePlugin {
             (make_root, (add_fruit, add_walls).in_set(Mel0nSetupSet)).chain(),
         );
 
-        // .add_systems(Update, log_player_position)
+        app.add_event::<ImpulseGizmoEvent>();
+
         app.add_systems(
-            Update,
+            FixedUpdate,
             (
-                // control_player,
-                // flip_player_sprite,
-                //
-                (
-                    apply_gravity,
-                    apply_friction,
-                    integrate_position,
-                    apply_collisions,
-                    constrain_objects,
-                )
-                    .chain()
-                    .in_set(Mel0nPhysicsSet),
-                place_fruit,
-                // clamp_player_to_screen,
-                // reset_jumps,
+                apply_gravity.run_if(not_moon_physics),
+                apply_friction.run_if(not_moon_physics),
+                integrate_position,
+                apply_collisions,
+                constrain_objects,
             )
-                .chain(),
+                .chain()
+                .in_set(Mel0nPhysicsSet),
         );
+
+        app.add_systems(Update, place_fruit);
     }
 }
 

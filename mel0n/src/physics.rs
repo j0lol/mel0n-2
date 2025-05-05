@@ -1,5 +1,8 @@
-use bevy::{math::bounding::IntersectsVolume, prelude::*};
+use core::f32::consts::FRAC_PI_2;
+
+use bevy::{color::palettes::css::GREEN, math::bounding::IntersectsVolume, prelude::*};
 use helpers::bounding_circle;
+use ops::atan2;
 
 use crate::{
     Gravity, Velocity,
@@ -7,7 +10,7 @@ use crate::{
 };
 
 const ELASTICITY: f32 = 0.7;
-const MASS: f32 = 16.0;
+pub const MASS: f32 = 16000.0;
 const INV_MASS: f32 = 1. / MASS;
 
 #[derive(Event)]
@@ -52,8 +55,8 @@ fn resolve_collision(contact: Contact) -> Vec2 {
     // info!("rel_v {rel_v}");
 
     // Let's forget that mass exists for a second.
-    // let impulse_mag = -(1. + e) * rel_v.dot(contact.normal) / (a.inverse_mass + b.inverse_mass);
-    let impulse_mag = -(1. + e) * rel_v.dot(contact.normal);
+    let impulse_mag = -(1. + e) * rel_v.dot(contact.normal) / (a.inverse_mass + b.inverse_mass);
+    // let impulse_mag = -(1. + e) * rel_v.dot(contact.normal);
 
     // info!("J {impulse_mag}");
     let impulse_dir = contact.normal;
@@ -105,7 +108,7 @@ pub fn apply_friction(mut entities: Query<&mut ActingForces>) {
 // Semi-implicit Euler Integration
 pub fn integrate_position(mut entities: Query<(&mut Transform, &mut Velocity, &mut ActingForces)>) {
     for (mut transform, mut velocity, mut forces) in &mut entities {
-        let acc = forces.0 / MASS;
+        let acc = forces.0;
         forces.0 = Vec2::ZERO;
 
         velocity.0 += acc;
@@ -113,11 +116,20 @@ pub fn integrate_position(mut entities: Query<(&mut Transform, &mut Velocity, &m
     }
 }
 
+#[derive(Event)]
+pub struct ImpulseGizmoEvent {
+    pub pos: Vec2,
+    pub imp: Vec2,
+    pub mass: f32,
+}
+
 pub fn apply_collisions(
     mut query: Query<
         (&mut Transform, &Diameter, &mut Velocity, &mut Collided),
         (With<Physics>, With<Fruit>),
     >,
+    mut ev_impulse: EventWriter<ImpulseGizmoEvent>,
+    mut gizmos: Gizmos,
 ) {
     let mut combinations = query.iter_combinations_mut();
     while let Some(
@@ -139,7 +151,11 @@ pub fn apply_collisions(
 
         // log::info!("bop!");
 
-        let normal_dir = a_trans.translation.xy().angle_to(b_trans.translation.xy());
+        // let normal_dir = a_trans.translation.xy().angle_to(b_trans.translation.xy());
+        let normal_dir = atan2(
+            b_trans.translation.y - a_trans.translation.y,
+            b_trans.translation.x - a_trans.translation.x,
+        );
         let normal = Vec2::from_angle(normal_dir).normalize();
 
         // log::info!("NORM {normal} ({normal_dir})");
@@ -172,8 +188,25 @@ pub fn apply_collisions(
         // log::info!("Rel V before: {}", a_vel.0.length() - b_vel.0.length());
         // log::info!("Rel V after: {}", impulse.length() - -impulse.length());
 
-        a_vel.0 += impulse;
-        b_vel.0 -= impulse;
+        let mirror_y = vec2(1., -1.);
+        let cam_offset = vec2(-110.0, 0.);
+
+        let pos = a_trans.translation.xy();
+        ev_impulse.write(ImpulseGizmoEvent {
+            pos,
+            imp: impulse,
+            mass: MASS,
+        });
+
+        let pos = b_trans.translation.xy();
+        ev_impulse.write(ImpulseGizmoEvent {
+            pos,
+            imp: -impulse,
+            mass: MASS,
+        });
+
+        a_vel.0 += impulse / MASS;
+        b_vel.0 -= impulse / MASS;
     }
 }
 
@@ -215,15 +248,16 @@ mod test {
 
     #[test]
     pub fn conservation_of_energy() {
+        const MASS: f32 = 1.0;
         let mut a = Body {
             restitution: 1.0,
             velocity: vec2(20.0, 0.),
-            inverse_mass: 1.0,
+            inverse_mass: 1.0 / MASS,
         };
         let mut b = Body {
             restitution: 1.0,
             velocity: vec2(-20.0, 0.),
-            inverse_mass: 1.0,
+            inverse_mass: 1.0 / MASS,
         };
         let contact = Contact {
             normal: Vec2::X,
@@ -234,8 +268,8 @@ mod test {
         let lhs = (a.velocity - b.velocity).length();
 
         let impulse = resolve_collision(contact);
-        a.velocity += impulse;
-        b.velocity -= impulse;
+        a.velocity += impulse / MASS;
+        b.velocity -= impulse / MASS;
 
         let rhs = (a.velocity - b.velocity).length();
 
@@ -245,6 +279,40 @@ mod test {
         // Weak comparison of floats
         assert_float_relative_eq!(lhs, rhs);
     }
+    #[test]
+    pub fn conservation_of_energy_with_mass() {
+        const MASS: f32 = 16.0;
+        let mut a = Body {
+            restitution: 1.0,
+            velocity: vec2(20.0, 0.),
+            inverse_mass: 1.0 / MASS,
+        };
+        let mut b = Body {
+            restitution: 1.0,
+            velocity: vec2(-20.0, 0.),
+            inverse_mass: 1.0 / MASS,
+        };
+        let contact = Contact {
+            normal: Vec2::X,
+            a,
+            b,
+        };
+
+        let lhs = (a.velocity - b.velocity).length();
+
+        let impulse = resolve_collision(contact);
+        a.velocity += impulse / MASS;
+        b.velocity -= impulse / MASS;
+
+        let rhs = (a.velocity - b.velocity).length();
+
+        assert_float_relative_eq!(a.velocity.x, -20.);
+        assert_float_relative_eq!(b.velocity.x, 20.);
+
+        // Weak comparison of floats
+        assert_float_relative_eq!(lhs, rhs);
+    }
+
     #[test]
     pub fn inelastic_collision_standstill() {
         let mut a = Body {

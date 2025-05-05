@@ -5,5 +5,8 @@ edition = "2024"
 
 [dependencies]
 mel0n = { path = "../mel0n", features = ["desktop"] }
-bevy = { version = "0.16", features = ["bevy_dev_tools"] }
+bevy = { version = "0.16", features = [
+    "bevy_dev_tools",
+    "bevy_debug_stepping",
+] }
 log = { version = "0.4", default-features = false }

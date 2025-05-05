@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    Collider, Velocity,
+    Collider, MOON_PHYSICS, Velocity,
     fruit::{Diameter, Fruit},
     physics::Physics,
 };
@@ -87,17 +87,19 @@ pub fn add_walls(mut commands: Commands) {
 pub fn constrain_objects(query: Query<(&mut Transform, &mut Velocity, &Diameter), With<Fruit>>) {
     // log::info!("bwuh");
 
+    const WALL_RESTITUTION: f32 = const { if MOON_PHYSICS { -1.0 } else { -0.2 } };
+
     for (mut ts, mut vl, dm) in query {
         // log::info!("guh {:?}", ts.0.translation);
 
         if ts.translation.x != ts.translation.x.clamp(LEFT_WALL, RIGHT_WALL - dm.0) {
-            vl.0.x *= -0.2;
+            vl.0.x *= WALL_RESTITUTION;
         }
-        if ts.translation.y != ts.translation.y.clamp(-9999.0, BOTTOM_WALL - dm.0) {
-            vl.0.y *= -0.2;
+        if ts.translation.y != ts.translation.y.clamp(TOP_WALL, BOTTOM_WALL - dm.0) {
+            vl.0.y *= WALL_RESTITUTION;
         }
 
         ts.translation.x = ts.translation.x.clamp(LEFT_WALL, RIGHT_WALL - dm.0);
-        ts.translation.y = ts.translation.y.clamp(-9999.0, BOTTOM_WALL - dm.0);
+        ts.translation.y = ts.translation.y.clamp(TOP_WALL, BOTTOM_WALL - dm.0);
     }
 }
