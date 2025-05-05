@@ -2,7 +2,10 @@ use bevy::prelude::*;
 
 #[cfg(feature = "gba")]
 use crate::Sprites;
-use crate::{Gravity, Root, Velocity, physics::Physics};
+use crate::{
+    Gravity, Root, Velocity,
+    physics::{ActingForces, Physics},
+};
 
 #[derive(Component, Clone, Copy, Default, Debug)]
 pub struct Diameter(pub f32);
@@ -18,12 +21,15 @@ pub struct FruitBundle {
     marker: Fruit,
     transform: Transform,
     velocity: Velocity,
+    acting_forces: ActingForces,
     grav_marker: Gravity,
     diameter: Diameter,
     physics: Physics,
 }
 
-static FRUIT_POS: [Vec2; 2] = [vec2(90., 999.), vec2(90., 30.)];
+// static FRUIT_POS: [Vec2; 2] = [vec2(90., 999.), vec2(90., 30.)];
+static FRUIT_POS: [Vec2; 0] = [];
+
 pub static FRUIT_DIAMETER: f32 = 16.;
 #[cfg(feature = "gba")]
 pub fn add_fruit(

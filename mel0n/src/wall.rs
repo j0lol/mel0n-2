@@ -91,10 +91,10 @@ pub fn constrain_objects(query: Query<(&mut Transform, &mut Velocity, &Diameter)
         // log::info!("guh {:?}", ts.0.translation);
 
         if ts.translation.x != ts.translation.x.clamp(LEFT_WALL, RIGHT_WALL - dm.0) {
-            vl.0.x *= -1.;
+            vl.0.x *= -0.2;
         }
         if ts.translation.y != ts.translation.y.clamp(-9999.0, BOTTOM_WALL - dm.0) {
-            vl.0.y *= -1.;
+            vl.0.y *= -0.2;
         }
 
         ts.translation.x = ts.translation.x.clamp(LEFT_WALL, RIGHT_WALL - dm.0);

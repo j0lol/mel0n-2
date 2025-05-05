@@ -1,18 +1,28 @@
-use std::time::Duration;
+use std::{
+    f32::consts::{FRAC_PI_2, PI, TAU},
+    time::Duration,
+};
 
 use bevy::{
+    color::palettes::css::{
+        BLACK, BLUE, FUCHSIA, GREEN, HOT_PINK, LIME, NAVY, ORANGE, ORANGE_RED, PINK, PURPLE, RED,
+        TEAL, YELLOW, YELLOW_GREEN,
+    },
     dev_tools::picking_debug::{DebugPickingMode, DebugPickingPlugin},
     log::LogPlugin,
     math::VectorSpace,
     prelude::*,
 };
 use mel0n::{
-    Collider, Mel0nBasePlugin, Mel0nSetupSet, Root, Velocity,
-    fruit::Fruit,
+    Collider, Mel0nBasePlugin, Mel0nPhysicsSet, Mel0nSetupSet, Root, Velocity,
+    fruit::{Collided, FRUIT_DIAMETER, Fruit},
     wall::{Wall, WallLocation},
 };
 
 use crate::gamepad_vis::GamepadVisPlugin;
+
+#[derive(Default, Reflect, GizmoConfigGroup)]
+struct MyRoundGizmos {}
 
 fn main() {
     App::new()
@@ -26,6 +36,13 @@ fn main() {
             MeshPickingPlugin,
             DebugPickingPlugin, // GamepadVisPlugin,
         ))
+        .add_systems(
+            Update,
+            ((draw_velocities, draw_collision_count)
+                .chain()
+                .after(Mel0nPhysicsSet)),
+        )
+        .init_gizmo_group::<MyRoundGizmos>()
         .insert_resource(DebugPickingMode::Noisy)
         .insert_resource(Time::<Virtual>::from_max_delta(Duration::from_secs(5)))
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(100)))
@@ -54,16 +71,42 @@ fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> impl Bu
     )
 }
 
-fn setup(mut commands: Commands, root: Single<Entity, With<Root>>) {
-    let entity = commands
-        .spawn(line_segment(
-            Vec2::new(0.0, 0.0),
-            Vec2::new(100.0, 200.0),
-            3.0,
-            Color::WHITE,
-        ))
-        .id();
-    commands.entity(root.entity()).add_child(entity);
+fn draw_velocities(query: Query<(&Velocity, &Transform), With<Fruit>>, mut gizmos: Gizmos) {
+    let mirror_y = vec2(1., -1.);
+    let cam_offset = vec2(-110.0, 0.);
+
+    for (vel, trans) in query {
+        let pos = trans.translation.xy();
+        gizmos.arrow_2d(
+            pos * mirror_y + cam_offset,
+            (pos + (vel.0 * 10.0)) * mirror_y + cam_offset,
+            RED,
+        );
+    }
+}
+
+fn draw_collision_count(query: Query<(&Collided, &Transform), With<Fruit>>, mut gizmos: Gizmos) {
+    let mirror_y = vec2(1., -1.);
+    let cam_offset = vec2(-110.0, 0.);
+
+    let rainbow = [RED, ORANGE_RED, YELLOW, GREEN, BLUE, PURPLE, HOT_PINK];
+
+    for (cold, trans) in query {
+        let pos = trans.translation.xy();
+        gizmos.circle_2d(
+            pos * mirror_y + cam_offset,
+            FRUIT_DIAMETER / 2.0,
+            rainbow[(cold.0 % 7) as usize],
+        );
+    }
+}
+
+fn kill_busy_fruits(mut commands: Commands, query: Query<(Entity, &Collided), With<Fruit>>) {
+    for (ent, collided) in query {
+        if collided.0 > 10 {
+            commands.entity(ent).despawn();
+        }
+    }
 }
 
 fn setup_camera(mut commands: Commands) {

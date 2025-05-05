@@ -17,7 +17,7 @@ use bevy_mod_gba::Sprite;
 use fruit::add_fruit;
 #[cfg(feature = "gba")]
 use gba::Mel0nGbaSetupSet;
-use physics::{apply_collisions, apply_friction, apply_gravity, apply_velocity};
+use physics::{apply_collisions, apply_friction, apply_gravity, integrate_position};
 use wall::add_walls;
 
 use crate::{fruit::place_fruit, wall::constrain_objects};
@@ -32,7 +32,7 @@ pub struct Gravity;
 
 #[derive(Component, Default, Debug)]
 #[require(Transform)]
-pub struct Velocity(Vec2);
+pub struct Velocity(pub Vec2);
 
 #[derive(Component, Default)]
 pub struct Jumps {
@@ -52,6 +52,10 @@ pub struct Sprites {
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Mel0nSetupSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Mel0nPhysicsSet;
+
 pub struct Mel0nBasePlugin;
 
 impl Plugin for Mel0nBasePlugin {
@@ -70,12 +74,17 @@ impl Plugin for Mel0nBasePlugin {
             (
                 // control_player,
                 // flip_player_sprite,
-                apply_gravity,
-                apply_friction,
-                apply_velocity,
+                //
+                (
+                    apply_gravity,
+                    apply_friction,
+                    integrate_position,
+                    apply_collisions,
+                    constrain_objects,
+                )
+                    .chain()
+                    .in_set(Mel0nPhysicsSet),
                 place_fruit,
-                apply_collisions,
-                constrain_objects,
                 // clamp_player_to_screen,
                 // reset_jumps,
             )
@@ -91,7 +100,21 @@ fn make_root(mut commands: Commands) {
     commands.spawn((
         Name::new("Root"),
         Root,
-        Transform::from_xyz(0., 0., 1.0).with_scale(Vec3::new(
+        Transform::from_xyz(
+            {
+                #[cfg(feature = "desktop")]
+                {
+                    -110.0
+                }
+                #[cfg(not(feature = "desktop"))]
+                {
+                    0.0
+                }
+            },
+            0.,
+            1.0,
+        )
+        .with_scale(Vec3::new(
             1.0,
             {
                 #[cfg(feature = "desktop")]

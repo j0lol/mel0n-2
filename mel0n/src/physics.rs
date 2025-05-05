@@ -28,8 +28,6 @@ pub struct Contact {
 // Linear Collision Resolution
 // https://youtu.be/1L2g4ZqmFLQ
 fn resolve_collision(contact: Contact) -> Vec2 {
-    use log::info;
-
     assert!(
         contact.normal.is_normalized(),
         "A normalized normal vector is needed."
@@ -42,27 +40,42 @@ fn resolve_collision(contact: Contact) -> Vec2 {
     assert!(e <= 1.0);
     assert!(e >= 0.0);
 
+    // if a.velocity.signum().y - b.velocity.signum().y > 0.0 {
+    //     warn!("Well that's strange.");
+    //     return vec2(0.0, 0.0);
+    // }
+    // if a.velocity.signum().x - b.velocity.signum().x > 0.0 {
+    //     warn!("Well that's strange.");
+    //     return vec2(0.0, 0.0);
+    // }
     let rel_v = a.velocity - b.velocity;
-    info!("rel_v {rel_v}");
+    // info!("rel_v {rel_v}");
 
-    let impulse_mag = -(1. + e) * rel_v.dot(contact.normal) / (a.inverse_mass + b.inverse_mass);
-    info!("J {impulse_mag}");
+    // Let's forget that mass exists for a second.
+    // let impulse_mag = -(1. + e) * rel_v.dot(contact.normal) / (a.inverse_mass + b.inverse_mass);
+    let impulse_mag = -(1. + e) * rel_v.dot(contact.normal);
+
+    // info!("J {impulse_mag}");
     let impulse_dir = contact.normal;
 
-    assert!(
-        impulse_mag < 80.0,
-        "Excessively large impulse: mag {impulse_mag} \n			= -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n			= {} / {}",
-        contact.normal,
-        a.inverse_mass,
-        b.inverse_mass,
-        -(1. + e) * rel_v.dot(contact.normal),
-        (a.inverse_mass + b.inverse_mass)
-    );
+    if impulse_mag.abs() > 80.0 {
+        warn!(
+            "Excessively large impulse: mag {impulse_mag} \n		           = -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n		           = {} / {}",
+            contact.normal,
+            a.inverse_mass,
+            b.inverse_mass,
+            -(1. + e) * rel_v.dot(contact.normal),
+            (a.inverse_mass + b.inverse_mass)
+        );
+    }
     impulse_dir * impulse_mag
 }
 
 #[derive(Component, Default, Debug)]
 pub struct Physics;
+
+#[derive(Component, Default, Debug)]
+pub struct ActingForces(Vec2);
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Collision {
@@ -72,26 +85,31 @@ pub enum Collision {
     Bottom,
 }
 
-pub fn apply_gravity(mut entities: Query<&mut Velocity, With<Gravity>>) {
+pub fn apply_gravity(mut entities: Query<&mut ActingForces, With<Gravity>>) {
     const TERMINAL_VELOCITY: f32 = 20.0;
-    for mut velocity in &mut entities {
-        velocity.0.y = (velocity.0.y + 0.4).clamp(-TERMINAL_VELOCITY, TERMINAL_VELOCITY);
+    for mut acting_forces in &mut entities {
+        acting_forces.0.y = (acting_forces.0.y + 0.4).clamp(-TERMINAL_VELOCITY, TERMINAL_VELOCITY);
     }
 }
 
 // Air and ground "friction"
-pub fn apply_friction(mut entities: Query<&mut Velocity>) {
-    const FRICTION_COEFFICIENT: f32 = 0.95;
-    for mut velocity in &mut entities {
-        velocity.0.x *= FRICTION_COEFFICIENT;
-        velocity.0.y *= FRICTION_COEFFICIENT;
+pub fn apply_friction(mut entities: Query<&mut ActingForces>) {
+    const FRICTION_COEFFICIENT: f32 = 1.0;
+    for mut acting_forces in &mut entities {
+        acting_forces.0.x *= FRICTION_COEFFICIENT;
+        acting_forces.0.y *= FRICTION_COEFFICIENT;
     }
 }
 
-pub fn apply_velocity(mut entities: Query<(&mut Transform, &Velocity)>) {
-    for (mut transform, velocity) in &mut entities {
-        transform.translation.x += velocity.0.x;
-        transform.translation.y += velocity.0.y;
+// https://www.gorillasun.de/blog/euler-and-verlet-integration-for-particle-physics/
+// Semi-implicit Euler Integration
+pub fn integrate_position(mut entities: Query<(&mut Transform, &mut Velocity, &mut ActingForces)>) {
+    for (mut transform, mut velocity, mut forces) in &mut entities {
+        let acc = forces.0 / MASS;
+        forces.0 = Vec2::ZERO;
+
+        velocity.0 += acc;
+        transform.translation = (transform.translation.xy() + velocity.0).extend(1.0);
     }
 }
 
@@ -119,12 +137,12 @@ pub fn apply_collisions(
         a_coltimes.0 += 1;
         b_coltimes.0 += 1;
 
-        log::info!("bop!");
+        // log::info!("bop!");
 
         let normal_dir = a_trans.translation.xy().angle_to(b_trans.translation.xy());
         let normal = Vec2::from_angle(normal_dir).normalize();
 
-        log::info!("NORM {normal} ({normal_dir})");
+        // log::info!("NORM {normal} ({normal_dir})");
 
         let impulse = resolve_collision(Contact {
             normal,
@@ -140,19 +158,19 @@ pub fn apply_collisions(
             },
         });
 
-        log::info!("jv {impulse}");
+        // log::info!("jv {impulse}");
 
-        log::info!(
-            "Obj A changed speed by {}x",
-            a_vel.0.length() / impulse.length()
-        );
-        log::info!(
-            "Obj B changed speed by {}x",
-            b_vel.0.length() / -impulse.length()
-        );
+        // log::info!(
+        //     "Obj A changed speed by {}x",
+        //     a_vel.0.length() / impulse.length()
+        // );
+        // log::info!(
+        //     "Obj B changed speed by {}x",
+        //     b_vel.0.length() / -impulse.length()
+        // );
 
-        log::info!("Rel V before: {}", a_vel.0.length() - b_vel.0.length());
-        log::info!("Rel V after: {}", impulse.length() - -impulse.length());
+        // log::info!("Rel V before: {}", a_vel.0.length() - b_vel.0.length());
+        // log::info!("Rel V after: {}", impulse.length() - -impulse.length());
 
         a_vel.0 += impulse;
         b_vel.0 -= impulse;
