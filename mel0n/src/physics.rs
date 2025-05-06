@@ -10,7 +10,7 @@ use crate::{
 };
 
 const ELASTICITY: f32 = 0.7;
-pub const MASS: f32 = 16000.0;
+pub const MASS: f32 = 16.0;
 const INV_MASS: f32 = 1. / MASS;
 
 #[derive(Event)]
@@ -61,16 +61,16 @@ fn resolve_collision(contact: Contact) -> Vec2 {
     // info!("J {impulse_mag}");
     let impulse_dir = contact.normal;
 
-    if impulse_mag.abs() > 80.0 {
-        log::warn!(
-            "Excessively large impulse: mag {impulse_mag} \n		           = -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n		           = {} / {}",
-            contact.normal,
-            a.inverse_mass,
-            b.inverse_mass,
-            -(1. + e) * rel_v.dot(contact.normal),
-            (a.inverse_mass + b.inverse_mass)
-        );
-    }
+    // if impulse_mag.abs() > 80.0 {
+    //     log::warn!(
+    //         "Excessively large impulse: mag {impulse_mag} \n		           = -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n		           = {} / {}",
+    //         contact.normal,
+    //         a.inverse_mass,
+    //         b.inverse_mass,
+    //         -(1. + e) * rel_v.dot(contact.normal),
+    //         (a.inverse_mass + b.inverse_mass)
+    //     );
+    // }
     impulse_dir * impulse_mag
 }
 
@@ -89,7 +89,7 @@ pub enum Collision {
 }
 
 pub fn apply_gravity(mut entities: Query<&mut ActingForces, With<Gravity>>) {
-    const TERMINAL_VELOCITY: f32 = 1.0;
+    const TERMINAL_VELOCITY: f32 = 20.0;
     for mut acting_forces in &mut entities {
         acting_forces.0.y = (acting_forces.0.y + 0.4).clamp(-TERMINAL_VELOCITY, TERMINAL_VELOCITY);
     }
@@ -106,13 +106,17 @@ pub fn apply_friction(mut entities: Query<&mut ActingForces>) {
 
 // https://www.gorillasun.de/blog/euler-and-verlet-integration-for-particle-physics/
 // Semi-implicit Euler Integration
-pub fn integrate_position(mut entities: Query<(&mut Transform, &mut Velocity, &mut ActingForces)>) {
+pub fn integrate_position(
+    mut entities: Query<(&mut Transform, &mut Velocity, &mut ActingForces)>,
+    time: Res<Time<Fixed>>,
+) {
     for (mut transform, mut velocity, mut forces) in &mut entities {
         let acc = forces.0;
         forces.0 = Vec2::ZERO;
 
         velocity.0 += acc;
-        transform.translation = (transform.translation.xy() + velocity.0).extend(1.0);
+        transform.translation =
+            (transform.translation.xy() + velocity.0 * time.delta().as_secs_f32()).extend(1.0);
     }
 }
 
@@ -128,6 +132,7 @@ pub fn apply_collisions(
         (&mut Transform, &Diameter, &mut Velocity, &mut Collided),
         (With<Physics>, With<Fruit>),
     >,
+    time: Res<Time<Fixed>>,
     mut ev_impulse: EventWriter<ImpulseGizmoEvent>,
 ) {
     let mut combinations = query.iter_combinations_mut();
@@ -159,51 +164,32 @@ pub fn apply_collisions(
 
         // log::info!("NORM {normal} ({normal_dir})");
 
-        let impulse = resolve_collision(Contact {
-            normal,
-            a: Body {
-                restitution: ELASTICITY,
-                velocity: a_vel.0,
-                inverse_mass: INV_MASS,
-            },
-            b: Body {
-                restitution: ELASTICITY,
-                velocity: b_vel.0,
-                inverse_mass: INV_MASS,
-            },
-        });
+        let a = Body {
+            restitution: ELASTICITY,
+            velocity: a_vel.0,
+            inverse_mass: INV_MASS,
+        };
+        let b = Body {
+            restitution: ELASTICITY,
+            velocity: b_vel.0,
+            inverse_mass: INV_MASS,
+        };
 
-        // let impulse_intersection_bias = |imp: Vec2, a: Vec2, b: Vec2| {
-        //     // let overlap = (a - b - ((a_diam.0 + b_diam.0) / 2.));
-        //     // assert!(overlap >= 0.0)
+        let moving_away =
+            (b_vel.0 - a_vel.0).dot(b_trans.translation.xy() - a_trans.translation.xy()) > 0.0;
 
-        //     const BIAS: f32 = 0.01;
+        // Stop "bouncing inwards"
+        if moving_away {
+            continue;
+        }
+        let impulse = resolve_collision(Contact { normal, a, b });
 
-        //     let overlap = abs((a - b).dot(normal));
-        //     let diam = a_diam.0;
-        //     let permissable_overlap = 1.0;
-
-        //     log::info!("d{}", diam);
-        //     log::info!("o{}", overlap);
-
-        //     imp * ((overlap - diam - permissable_overlap) * BIAS).min(1.0)
-        // };
-
-        // let impulse =
-        //     impulse_intersection_bias(impulse, a_trans.translation.xy(), b_trans.translation.xy());
-        log::info!("jv {impulse}");
-
-        // log::info!(
-        //     "Obj A changed speed by {}x",
-        //     a_vel.0.length() / impulse.length()
-        // );
-        // log::info!(
-        //     "Obj B changed speed by {}x",
-        //     b_vel.0.length() / -impulse.length()
-        // );
-
-        // log::info!("Rel V before: {}", a_vel.0.length() - b_vel.0.length());
-        // log::info!("Rel V after: {}", impulse.length() - -impulse.length());
+        // Baumgarte stabilization
+        let penetration_depth = (a_trans.translation.xy() - b_trans.translation.xy()).length()
+            - f32::midpoint(a_diam.0, b_diam.0);
+        // info!("pend {penetration_depth}");
+        let bias_factor = 0.2;
+        let bias = (bias_factor / time.delta().as_secs_f32()) * penetration_depth.abs().max(0.0);
 
         // Draw arrows
         {
@@ -222,8 +208,8 @@ pub fn apply_collisions(
             });
         }
 
-        a_vel.0 += impulse / MASS;
-        b_vel.0 -= impulse / MASS;
+        a_vel.0 += (impulse + bias) / MASS;
+        b_vel.0 -= (impulse + bias) / MASS;
     }
 }
 

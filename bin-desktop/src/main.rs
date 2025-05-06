@@ -42,23 +42,23 @@ fn main() {
             MeshPickingPlugin,
             DebugPickingPlugin, // GamepadVisPlugin,
         ))
-        .add_systems(
-            Update,
-            ((
-                draw_velocities,
-                // draw_velocities_added,
-                draw_collision_count,
-                draw_impulse_gizmos,
-                // angle_draw,
-            )
-                .chain()
-                .after(Mel0nPhysicsSet)),
-        )
+        // .add_systems(
+        //     Update,
+        //     ((
+        //         draw_velocities,
+        //         // draw_velocities_added,
+        //         draw_collision_count,
+        //         draw_impulse_gizmos,
+        //         angle_draw,
+        //     )
+        //         .chain()
+        //         .after(Mel0nPhysicsSet)),
+        // )
         .add_systems(Update, stepping_handler)
         .init_gizmo_group::<MyRoundGizmos>()
         .insert_resource(DebugPickingMode::Noisy)
         .insert_resource(Time::<Virtual>::from_max_delta(Duration::from_secs(5)))
-        .insert_resource(Time::<Fixed>::from_hz(64.0))
+        .insert_resource(Time::<Fixed>::from_hz(64.0 * 16.0))
         .insert_resource(stepping)
         .insert_resource(ImpulseCache::default())
         .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)))
@@ -106,7 +106,7 @@ fn draw_velocities(query: Query<(&Velocity, &Transform), With<Fruit>>, mut gizmo
         let pos = trans.translation.xy();
         gizmos.arrow_2d(
             pos * mirror_y + cam_offset,
-            (pos + (vel.0 * 100.0)) * mirror_y + cam_offset,
+            (pos + (vel.0 * 1.0)) * mirror_y + cam_offset,
             RED,
         );
     }
@@ -163,7 +163,7 @@ fn draw_impulse_gizmos(
     for ImpulseGizmoEvent { pos, imp, mass } in vec {
         gizmos.arrow_2d(
             pos * mirror_y + cam_offset,
-            (pos + (imp / mass * 100.0)) * mirror_y + cam_offset,
+            (pos + (imp / mass * 1.0)) * mirror_y + cam_offset,
             GREEN,
         );
     }

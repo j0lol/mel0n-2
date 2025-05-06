@@ -29,7 +29,7 @@ use wall::add_walls;
 
 use crate::{fruit::place_fruit, wall::constrain_objects};
 
-const MOON_PHYSICS: bool = true;
+const MOON_PHYSICS: bool = false;
 #[derive(Component)]
 #[require(Gravity, Jumps, Velocity, Transform)]
 pub struct Player;

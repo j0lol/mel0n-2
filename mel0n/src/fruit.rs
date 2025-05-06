@@ -102,7 +102,7 @@ pub fn place_fruit(
                     diameter: Diameter(FRUIT_DIAMETER),
                     velocity: Velocity(vec2(
                         if MOON_PHYSICS { 0.7 } else { 0.0 },
-                        if MOON_PHYSICS { 1.0 } else { 0.0 },
+                        if MOON_PHYSICS { 10.0 } else { 0.0 },
                     )),
                     ..default()
                 },
@@ -143,7 +143,7 @@ pub fn place_fruit(
                         .with_scale(Vec2::splat(FRUIT_DIAMETER).extend(1.)),
                     velocity: Velocity(vec2(
                         if MOON_PHYSICS { 0.7 } else { 0.0 },
-                        if MOON_PHYSICS { 1.0 } else { 0.0 },
+                        if MOON_PHYSICS { 10.0 } else { 0.0 },
                     )),
                     ..default()
                 },
