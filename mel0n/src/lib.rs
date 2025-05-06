@@ -11,13 +11,12 @@ pub mod gba;
 pub mod physics;
 pub mod wall;
 
-use bevy::{
-    gizmos::{
-        UpdateGizmoMeshes, clear_gizmo_context, collect_requested_gizmos, end_gizmo_context,
-        gizmos::GizmoStorage, propagate_gizmos, start_gizmo_context,
-    },
-    prelude::*,
-};
+#[cfg(feature = "gba")]
+pub use agb;
+pub use bevy;
+use bevy::prelude::*;
+#[cfg(feature = "gba")]
+pub use bevy_mod_gba;
 #[cfg(feature = "gba")]
 use bevy_mod_gba::Sprite;
 use fruit::add_fruit;
@@ -66,10 +65,6 @@ pub struct Mel0nSetupSet;
 pub struct Mel0nPhysicsSet;
 
 pub struct Mel0nBasePlugin;
-
-#[derive(GizmoConfigGroup, Reflect, Default)]
-struct PhysGizmoConfigGroup;
-struct PhysGizmoContext;
 
 fn not_moon_physics() -> bool {
     !MOON_PHYSICS

@@ -93,12 +93,17 @@ pub fn place_fruit(
         let sprites = sprites.as_ref().unwrap();
 
         let fruit = vec2(100., 0.);
+        use crate::MOON_PHYSICS;
 
         let entity = commands
             .spawn((
                 FruitBundle {
                     transform: Transform::from_xyz(fruit.x, fruit.y, 0.0),
                     diameter: Diameter(FRUIT_DIAMETER),
+                    velocity: Velocity(vec2(
+                        if MOON_PHYSICS { 0.7 } else { 0.0 },
+                        if MOON_PHYSICS { 1.0 } else { 0.0 },
+                    )),
                     ..default()
                 },
                 sprites.player.clone(),

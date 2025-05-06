@@ -2,7 +2,7 @@ use core::f32::consts::FRAC_PI_2;
 
 use bevy::{color::palettes::css::GREEN, math::bounding::IntersectsVolume, prelude::*};
 use helpers::bounding_circle;
-use ops::atan2;
+use ops::{abs, atan2};
 
 use crate::{
     Gravity, Velocity,
@@ -62,7 +62,7 @@ fn resolve_collision(contact: Contact) -> Vec2 {
     let impulse_dir = contact.normal;
 
     if impulse_mag.abs() > 80.0 {
-        warn!(
+        log::warn!(
             "Excessively large impulse: mag {impulse_mag} \n		           = -(1. + {e}) * {rel_v}.dot({}) / ({} + {}) \n		           = {} / {}",
             contact.normal,
             a.inverse_mass,
@@ -89,7 +89,7 @@ pub enum Collision {
 }
 
 pub fn apply_gravity(mut entities: Query<&mut ActingForces, With<Gravity>>) {
-    const TERMINAL_VELOCITY: f32 = 20.0;
+    const TERMINAL_VELOCITY: f32 = 1.0;
     for mut acting_forces in &mut entities {
         acting_forces.0.y = (acting_forces.0.y + 0.4).clamp(-TERMINAL_VELOCITY, TERMINAL_VELOCITY);
     }
@@ -97,7 +97,7 @@ pub fn apply_gravity(mut entities: Query<&mut ActingForces, With<Gravity>>) {
 
 // Air and ground "friction"
 pub fn apply_friction(mut entities: Query<&mut ActingForces>) {
-    const FRICTION_COEFFICIENT: f32 = 1.0;
+    const FRICTION_COEFFICIENT: f32 = 0.9;
     for mut acting_forces in &mut entities {
         acting_forces.0.x *= FRICTION_COEFFICIENT;
         acting_forces.0.y *= FRICTION_COEFFICIENT;
@@ -116,7 +116,7 @@ pub fn integrate_position(mut entities: Query<(&mut Transform, &mut Velocity, &m
     }
 }
 
-#[derive(Event)]
+#[derive(Event, Clone, Copy)]
 pub struct ImpulseGizmoEvent {
     pub pos: Vec2,
     pub imp: Vec2,
@@ -129,7 +129,6 @@ pub fn apply_collisions(
         (With<Physics>, With<Fruit>),
     >,
     mut ev_impulse: EventWriter<ImpulseGizmoEvent>,
-    mut gizmos: Gizmos,
 ) {
     let mut combinations = query.iter_combinations_mut();
     while let Some(
@@ -174,7 +173,25 @@ pub fn apply_collisions(
             },
         });
 
-        // log::info!("jv {impulse}");
+        // let impulse_intersection_bias = |imp: Vec2, a: Vec2, b: Vec2| {
+        //     // let overlap = (a - b - ((a_diam.0 + b_diam.0) / 2.));
+        //     // assert!(overlap >= 0.0)
+
+        //     const BIAS: f32 = 0.01;
+
+        //     let overlap = abs((a - b).dot(normal));
+        //     let diam = a_diam.0;
+        //     let permissable_overlap = 1.0;
+
+        //     log::info!("d{}", diam);
+        //     log::info!("o{}", overlap);
+
+        //     imp * ((overlap - diam - permissable_overlap) * BIAS).min(1.0)
+        // };
+
+        // let impulse =
+        //     impulse_intersection_bias(impulse, a_trans.translation.xy(), b_trans.translation.xy());
+        log::info!("jv {impulse}");
 
         // log::info!(
         //     "Obj A changed speed by {}x",
@@ -188,22 +205,22 @@ pub fn apply_collisions(
         // log::info!("Rel V before: {}", a_vel.0.length() - b_vel.0.length());
         // log::info!("Rel V after: {}", impulse.length() - -impulse.length());
 
-        let mirror_y = vec2(1., -1.);
-        let cam_offset = vec2(-110.0, 0.);
+        // Draw arrows
+        {
+            let pos = a_trans.translation.xy();
+            ev_impulse.write(ImpulseGizmoEvent {
+                pos,
+                imp: impulse,
+                mass: MASS,
+            });
 
-        let pos = a_trans.translation.xy();
-        ev_impulse.write(ImpulseGizmoEvent {
-            pos,
-            imp: impulse,
-            mass: MASS,
-        });
-
-        let pos = b_trans.translation.xy();
-        ev_impulse.write(ImpulseGizmoEvent {
-            pos,
-            imp: -impulse,
-            mass: MASS,
-        });
+            let pos = b_trans.translation.xy();
+            ev_impulse.write(ImpulseGizmoEvent {
+                pos,
+                imp: -impulse,
+                mass: MASS,
+            });
+        }
 
         a_vel.0 += impulse / MASS;
         b_vel.0 -= impulse / MASS;

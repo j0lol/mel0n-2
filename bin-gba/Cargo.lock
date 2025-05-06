@@ -174,6 +174,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_color"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddf6a5ad35496bbc41713efbcf06ab72b9a310fabcab0f9db1debb56e8488c6e"
+dependencies = [
+ "bevy_math",
+ "bevy_reflect",
+ "bytemuck",
+ "derive_more",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "bevy_derive"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -262,6 +276,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "526ffd64c58004cb97308826e896c07d0e23dc056c243b97492e31cdf72e2830"
 dependencies = [
  "bevy_app",
+ "bevy_color",
  "bevy_derive",
  "bevy_diagnostic",
  "bevy_ecs",
@@ -312,8 +327,7 @@ dependencies = [
 [[package]]
 name = "bevy_mod_gba"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63087077802cc8a23f505933dc87c6ec63269f32b9aed9c7bdf62e95f3462138"
+source = "git+https://github.com/bushrat011899/bevy_mod_gba#72d8bbf47b33a0ab2f825d80e9ed0b6e5268bf1e"
 dependencies = [
  "agb",
  "bevy",
@@ -486,9 +500,6 @@ dependencies = [
 name = "bin-gba"
 version = "0.1.0"
 dependencies = [
- "agb",
- "bevy",
- "bevy_mod_gba",
  "itertools 0.14.0",
  "log",
  "mel0n",
@@ -517,6 +528,20 @@ name = "bytemuck"
 version = "1.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9134a6ef01ce4b366b50689c94f82c14bc72bc5d0386829828a2e2752ef7958c"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ecc273b49b3205b83d648f0690daa588925572cc5063745bfe547fe7ec8e1a1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "byteorder"

@@ -46,9 +46,10 @@ fn main() {
             Update,
             ((
                 draw_velocities,
-                // draw_collision_count,
-                // draw_impulse_gizmos,
-                angle_draw,
+                // draw_velocities_added,
+                draw_collision_count,
+                draw_impulse_gizmos,
+                // angle_draw,
             )
                 .chain()
                 .after(Mel0nPhysicsSet)),
@@ -59,6 +60,7 @@ fn main() {
         .insert_resource(Time::<Virtual>::from_max_delta(Duration::from_secs(5)))
         .insert_resource(Time::<Fixed>::from_hz(64.0))
         .insert_resource(stepping)
+        .insert_resource(ImpulseCache::default())
         .insert_resource(ClearColor(Color::srgb(0.1, 0.1, 0.1)))
         .add_systems(Startup, (setup_camera, show_walls.after(Mel0nSetupSet)))
         .run();
@@ -110,14 +112,58 @@ fn draw_velocities(query: Query<(&Velocity, &Transform), With<Fruit>>, mut gizmo
     }
 }
 
-fn draw_impulse_gizmos(mut ev_impulse: EventReader<ImpulseGizmoEvent>, mut gizmos: Gizmos) {
+fn draw_velocities_added(query: Query<(&Velocity), With<Fruit>>, mut gizmos: Gizmos) {
+    let mirror_y = vec2(1., -1.);
+    let cam_offset = vec2(-110.0, 0.);
+    let off = |v| v * mirror_y + cam_offset;
+
+    let velocities: Vec<_> = query.iter().collect();
+
+    let mut prev_velocity = Vec2::ZERO;
+    let mut offset = prev_velocity;
+
+    for velocity in velocities {
+        gizmos.arrow_2d(off(offset), off(offset + (velocity.0 * 20.0)), RED);
+        prev_velocity = velocity.0 * 20.0;
+        offset += prev_velocity;
+    }
+}
+
+#[derive(Resource, Default)]
+struct ImpulseCache(Option<Vec<ImpulseGizmoEvent>>);
+
+fn draw_impulse_gizmos(
+    mut ev_impulse: EventReader<ImpulseGizmoEvent>,
+    mut imp_time: ResMut<ImpulseCache>,
+    mut gizmos: Gizmos,
+) {
     let mirror_y = vec2(1., -1.);
     let cam_offset = vec2(-110.0, 0.);
 
-    for ImpulseGizmoEvent { pos, imp, mass } in ev_impulse.read() {
+    let vec = if ev_impulse.is_empty() {
+        if let Some(vec) = imp_time.0.clone() {
+            vec
+        } else {
+            return;
+        }
+    } else {
+        let impulses: Vec<ImpulseGizmoEvent> = ev_impulse.read().copied().collect();
+
+        imp_time.0 = Some(impulses.clone());
+        impulses
+        // for ImpulseGizmoEvent { pos, imp, mass } in impulses {
+        //     gizmos.arrow_2d(
+        //         pos * mirror_y + cam_offset,
+        //         (pos + (imp / mass * 1000.0)) * mirror_y + cam_offset,
+        //         GREEN,
+        //     );
+        // }
+    };
+
+    for ImpulseGizmoEvent { pos, imp, mass } in vec {
         gizmos.arrow_2d(
             pos * mirror_y + cam_offset,
-            (pos + (imp / mass * 1000.0)) * mirror_y + cam_offset,
+            (pos + (imp / mass * 100.0)) * mirror_y + cam_offset,
             GREEN,
         );
     }

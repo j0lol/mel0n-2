@@ -981,8 +981,7 @@ dependencies = [
 [[package]]
 name = "bevy_mod_gba"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63087077802cc8a23f505933dc87c6ec63269f32b9aed9c7bdf62e95f3462138"
+source = "git+https://github.com/bushrat011899/bevy_mod_gba#72d8bbf47b33a0ab2f825d80e9ed0b6e5268bf1e"
 dependencies = [
  "agb",
  "bevy",

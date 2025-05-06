@@ -14,25 +14,25 @@
 //! [`agb`] provides a global allocator, allowing us to use items from the [`alloc`] crate.
 extern crate alloc;
 
-use bevy::{
-    app::PanicHandlerPlugin,
-    diagnostic::{DiagnosticsPlugin, FrameCountPlugin},
-    input::{
-        gamepad::{gamepad_connection_system, gamepad_event_processing_system},
-        InputSystem,
-    },
-    prelude::*,
-    state::app::StatesPlugin,
-    time::TimePlugin,
-};
-use bevy_mod_gba::{prelude::*, AgbSoundPlugin, Sprite};
 use log::info;
 use mel0n::{
+    agb,
+    bevy::{
+        app::PanicHandlerPlugin,
+        diagnostic::{DiagnosticsPlugin, FrameCountPlugin},
+        input::{
+            gamepad::{gamepad_connection_system, gamepad_event_processing_system},
+            InputSystem,
+        },
+        prelude::*,
+        state::app::StatesPlugin,
+        time::TimePlugin,
+    },
+    bevy_mod_gba::{prelude::*, AgbSoundPlugin, Sprite},
     fruit::add_fruit,
     gba::{Mel0nGbaPlugin, Mel0nGbaSetupSet},
-    physics::{apply_collisions, apply_friction, apply_gravity, apply_velocity},
     wall::add_walls,
-    Mel0nBasePlugin
+    Mel0nBasePlugin,
 };
 
 /// Main entry point.
@@ -79,116 +79,13 @@ pub extern "C" fn main() {
     // This means getting assets, and rendering them must be done somewhat manually.
     app.add_plugins(Mel0nGbaPlugin);
 
-    // This is our game logic and is entirely independent of the platform we're targeting.
-    // app.add_systems(Startup, (add_fruit, add_walls).after(Mel0nGbaSetupSet))
-    //     // .add_systems(Update, log_player_position)
-    //     .add_systems(
-    //         FixedUpdate,
-    //         (
-    //             // control_player,
-    //             // flip_player_sprite,
-    //             apply_gravity,
-    //             apply_friction,
-    //             apply_velocity,
-    //             apply_collisions,
-    //             // clamp_player_to_screen,
-    //             // reset_jumps,
-    //         )
-    //             .chain(),
-    //     );
     app.add_plugins(Mel0nBasePlugin);
+    app.insert_resource(Time::<Virtual>::from_max_delta(
+        core::time::Duration::from_secs(5),
+    ));
 
+    app.insert_resource(Time::<Fixed>::from_hz(60.0));
     app.run();
 
     agb::syscall::stop();
 }
-
-// fn log_player_position(player: Single<&Transform, With<Player>>) {
-//     info!(
-//         "Player: ({}, {})",
-//         player.translation.x, player.translation.y
-//     );
-// }
-
-// fn spawn_player(mut commands: Commands, sprites: NonSend<Option<Sprites>>) {
-//     let sprites = sprites.as_ref().unwrap();
-//     commands.spawn((
-//         Transform::from_xyz(98., 128., 0.),
-//         sprites.player.clone(),
-//         Player,
-//         Jumps {
-//             max: 2,
-//             ..default()
-//         },
-//     ));
-// }
-
-// fn reset_jumps(mut query: Query<(&mut Jumps, &Transform)>) {
-//     for (mut jumps, transform) in &mut query {
-//         if transform.translation.y > 127. {
-//             jumps.current = 0;
-//         }
-//     }
-// }
-
-// fn flip_player_sprite(mut player: Single<&mut Sprite, With<Player>>, gamepad: Single<&Gamepad>) {
-//     if gamepad.just_pressed(GamepadButton::DPadLeft) {
-//         player.horizontal_flipped = true;
-//     }
-
-//     if gamepad.just_pressed(GamepadButton::DPadRight) {
-//         player.horizontal_flipped = false;
-//     }
-// }
-
-// fn control_player(
-//     player: Single<(&mut Velocity, &mut Jumps), With<Player>>,
-//     gamepad: Single<&Gamepad>,
-//     noise: ResMut<Noise>,
-// ) {
-//     let (mut velocity, mut jumps) = player.into_inner();
-
-//     if gamepad.pressed(GamepadButton::DPadLeft) {
-//         velocity.x -= 1.;
-
-//         noise.play_sound(
-//             Some(1),
-//             &EnvelopeSettings::new(1, agb::sound::dmg::SoundDirection::Decrease, 1),
-//             4,
-//             false,
-//             4,
-//         );
-//     }
-
-//     if gamepad.pressed(GamepadButton::DPadRight) {
-//         velocity.x += 1.;
-
-//         noise.play_sound(
-//             Some(1),
-//             &EnvelopeSettings::new(1, agb::sound::dmg::SoundDirection::Decrease, 1),
-//             4,
-//             false,
-//             4,
-//         );
-//     }
-
-//     if gamepad.just_pressed(GamepadButton::South) && jumps.current < jumps.max {
-//         jumps.current += 1;
-//         velocity.y = -5.;
-
-//         noise.play_sound(
-//             Some(32),
-//             &EnvelopeSettings::new(1, agb::sound::dmg::SoundDirection::Decrease, 4),
-//             0,
-//             false,
-//             0,
-//         );
-//     }
-
-//     velocity.x = velocity.x.clamp(-2., 2.);
-// }
-
-// fn clamp_player_to_screen(mut player: Single<&mut Transform, With<Player>>) {
-//     player.translation.x = player.translation.x.clamp(0., 208.);
-//     player.translation.y = player.translation.y.clamp(0., 128.);
-// }
